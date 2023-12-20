@@ -191,7 +191,35 @@ st.sidebar.write("1. Current model only support 14 teeth images, please upload i
 st.sidebar.write("2. Whether it is the upper or lower arch image, please ensure the dental arch is facing upwards in an \"n\" shape.")
 st.sidebar.write("3. For best result, please ensure the whole dental is centered at the middle.")
 st.sidebar.image('sample.JPG', caption="Example image")
-model = tf.keras.models.load_model('intraoral_modelv2.h5')
+
+# model = tf.keras.models.load_model('intraoral_modelv2.h5')
+
+# download model because deployment doesn't support file > 100MB
+import gdown
+# Define a function to download the model from the gdrive link
+@st.cache_resource
+def download_model():
+  # Specify the gdrive link and the file name
+  gdrive_link = 'https://drive.google.com/uc?id=1c1P3vLze0NpqyCTc7eWBPyIR9cqMG4K_'
+  file_name = "intraoral_modelv2.h5"
+  # Use gdown to download the file from the gdrive link
+  gdown.download(gdrive_link, file_name, quiet=False)
+  # Return the file name
+  return file_name
+
+# Define a function to load the model using keras
+@st.cache_resource
+def load_model(file_name):
+  # Load the model from the local file
+  model = tf.keras.models.load_model(file_name)
+  # Return the model
+  return model
+
+# Call the download_model function and get the file name
+file_name = download_model()
+# Call the load_model function and get the model
+model = load_model(file_name)
+
 image = st.file_uploader("Upload an intraoral photograph", type = ['png', 'jpg'])
 st.set_option('deprecation.showPyplotGlobalUse', False)
 if image is not None:
