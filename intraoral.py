@@ -106,10 +106,9 @@ def denormalize_keypoints(predictions, target_width, target_height):
 
     # # Apply the mask to the keypoint array
     # keypoint = keypoint[mask]
-
     return denormalzied_keypoints
 
-def B_spline_curve_fitting_visualize(images, keypoints, smoothness = 1000):
+def B_spline_curve_fitting_visualize(images, keypoints):
     # Define a list of 32 colors for each keypoint
     colors = list(matplotlib.colors.CSS4_COLORS.keys())[:32]
 
@@ -157,11 +156,43 @@ def B_spline_curve_fitting_visualize(images, keypoints, smoothness = 1000):
         if n_valid == 0:
             n_valid = keypoint.shape[0]
 
+        with st.expander("Adjust curve"):
+            smoothness = st.slider("Smoothness of curve", 300, 3000, value = 1000)
+            coeff = st.slider("Curve size", -20.0, 20.0, value = -5.0)
+            middle = st.slider("Middle point", -20.0, 20.0, value = 0.0)
+            starting_point = st.slider("Starting point", -20.0, 20.0, value = 0.0)
+            ending_point = st.slider("Ending point", -20.0, 20.0, value = 0.0)
+
         # Fit a B-spline curve to the first n_valid keypoints
         # tck, u = splprep(keypoint[:n_valid].T, u=None, s=smoothness)
+            
         tck, u = splprep(keypoint.T, u=None, s=smoothness)
         u_new = np.linspace(u.min(), u.max(), 1000)
-        x_new, y_new = splev(u_new, tck)
+        # x_new, y_new = splev(u_new, tck)
+        c_new = tck[1].copy()
+        c_new[0][0] -= coeff # left x
+        c_new[0][1] -= coeff # left upper x
+        c_new[0][-2] += coeff # right upper x
+        c_new[0][-1] += coeff # right x
+
+        # adjust curve for middle point
+        if (len(c_new[1]) % 2 == 0):
+            middle_index1 = int(len(c_new[1])/2)
+            middle_index2 = int(len(c_new[1])/2 - 1)
+            c_new[1][middle_index1] -= coeff
+            c_new[1][middle_index2] -= coeff
+            c_new[1][middle_index1] -= middle
+            c_new[1][middle_index2] -= middle
+        else:
+            middle_index = int(len(c_new[1])//2)
+            c_new[1][middle_index] -= middle
+            c_new[1][middle_index] -= coeff
+
+        # adjust start point and end point
+        c_new[1][0] += starting_point
+        c_new[1][-1] += ending_point
+
+        x_new, y_new = splev(u_new, (tck[0], c_new, tck[2]))
 
         # Plot the B-spline curve
         plt.plot(x_new, y_new)
@@ -172,22 +203,16 @@ def B_spline_curve_fitting_visualize(images, keypoints, smoothness = 1000):
     return x_list, y_list
 
 def calculate_tooth_width(keypoints):
-  # Reshape the tensor to shape (14, 2, 2)
-  reshaped_keypoints = tf.reshape(keypoints, (14, 2, 2))
+    # Reshape the tensor to shape (14, 2, 2)
+    reshaped_keypoints = tf.reshape(keypoints, (14, 2, 2))
+    denormalized_reshaped_keypoints = reshaped_keypoints.numpy() * np.array([target_width, target_height])
 
-  # Calculate the Euclidean distance for each tooth
-  tooth_lengths = tf.norm(reshaped_keypoints[:, 0, :] - reshaped_keypoints[:, 1, :], axis=1)
-
-  # Scale lengths to pixel distances
-  tooth_lengths_pixels = tooth_lengths * np.sqrt(target_width**2 + target_height**2)
-
-  # Convert to numpy array for easier manipulation
-  tooth_lengths_pixels = tooth_lengths_pixels.numpy()
-
-  return tooth_lengths_pixels
+    # Calculate the Euclidean distance for each tooth
+    tooth_lengths_pixels = tf.norm(denormalized_reshaped_keypoints[:, 0, :] - denormalized_reshaped_keypoints[:, 1, :], axis=1)
+    return tooth_lengths_pixels.numpy()
 
 st.sidebar.header("Note :warning:")
-st.sidebar.write("1. Current model only support 14 teeth images, please upload image with 14 teeth only.")
+st.sidebar.write("1. Current model only able to detect 14 pairs of mesial and distal points, please upload image with 14 teeth only.")
 st.sidebar.write("2. Whether it is the upper or lower arch image, please ensure the dental arch is facing upwards in an \"n\" shape.")
 st.sidebar.write("3. For best result, please ensure the whole dental is centered at the middle.")
 st.sidebar.image('sample.JPG', caption="Example image")
@@ -256,13 +281,9 @@ if image is not None:
             if adjusted_point is not None:
                 st.session_state.denormalized_predictions[0, option-1, 0] = adjusted_point['x']
                 st.session_state.denormalized_predictions[0, option-1, 1] = adjusted_point['y']
-      
-
-        with st.expander("Adjust curve"):
-            smoothness = st.slider("Smoothness of curve", 0, 1000, value = 1000)
 
         # display result
-        x_list, y_list = B_spline_curve_fitting_visualize(image, st.session_state.denormalized_predictions, smoothness)
+        x_list, y_list = B_spline_curve_fitting_visualize(image, st.session_state.denormalized_predictions)
 
         with st.form(key='my_form'):
             actual_length = st.number_input("Input central incisor tooth width (mm)", min_value = 0, value = None, placeholder = "Type a number...")
@@ -282,5 +303,6 @@ if image is not None:
                     distances = np.sqrt(np.sum(np.diff(points, axis=0)**2, axis=1))
                     curve_length_pixels = np.sum(distances)
                     curve_length_actual = curve_length_pixels * scale_factor
+
                 st.write("Arch form length: {:.2f} mm".format(curve_length_actual))
                 st.write("Crowding: {:.2f} mm".format(sum_tooth_widths-curve_length_actual))

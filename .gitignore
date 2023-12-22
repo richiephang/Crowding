@@ -3,3 +3,4 @@ intraoral_model.h5
 intraoral_modelv2.h5
 intraoral_model/
 toothpoints_prediction_model/
+filtering_model.h5
