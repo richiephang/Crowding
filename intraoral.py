@@ -242,7 +242,7 @@ def download_models():
 
     # Use gdown to download the file from the gdrive link
     gdown.download(model_link, model_file_name, quiet=False)
-    gdown.download(filtering_model_link, model_file_name, quiet=False)
+    gdown.download(filtering_model_link, filtering_model_file_name, quiet=False)
     # Return the file name
     return model_file_name, filtering_model_file_name
 
@@ -250,24 +250,23 @@ def download_models():
 @st.cache_resource
 def load_model(file_name):
   # Load the model from the local file
-  model = tf.keras.models.load_model(file_name, compile = False)
-  model.compile(loss='mean_squared_error', optimizer='adam')
+  model = tf.keras.models.load_model(file_name)
   # Return the model
   return model
 
-# @st.cache_resource
-# def load_filtering_model(file_name):
-#   # Load the model from the local file
-#   filtering_model = tf.keras.models.load_model(file_name, compile = False)
-#   filtering_model.compile(loss='mean_squared_error', optimizer='adam')
-#   # Return the model
-#   return filtering_model
+@st.cache_resource
+def load_filtering_model(file_name):
+  # Load the model from the local file
+  filtering_model = tf.keras.models.load_model(file_name, compile = False)
+  filtering_model.compile(loss='mean_squared_error', optimizer='adam')
+  # Return the model
+  return filtering_model
 
 # Call the download_model function and get the file name
 model_file_name, filtering_model_file_name = download_models()
 # Call the load_model function and get the model
 model = load_model(model_file_name)
-filtering_model = load_model(filtering_model_file_name)
+filtering_model = load_filtering_model(filtering_model_file_name)
 
 image = st.file_uploader("Upload an intraoral photograph", type = ['png', 'jpg'])
 st.set_option('deprecation.showPyplotGlobalUse', False)
