@@ -100,7 +100,6 @@ def visualize_keypoints(images, keypoints, target_width, target_height):
 def denormalize_keypoints(predictions, target_width, target_height):
     denormalzied_keypoints = predictions.numpy()
     denormalzied_keypoints = denormalzied_keypoints * np.array([target_width, target_height])
-
     # # Define a boolean mask to filter out rows that contain 0s
     # mask = (keypoint != 0).all(axis=1)
 
@@ -165,7 +164,6 @@ def B_spline_curve_fitting_visualize(images, keypoints):
 
         # Fit a B-spline curve to the first n_valid keypoints
         # tck, u = splprep(keypoint[:n_valid].T, u=None, s=smoothness)
-            
         tck, u = splprep(keypoint.T, u=None, s=smoothness)
         u_new = np.linspace(u.min(), u.max(), 1000)
         # x_new, y_new = splev(u_new, tck)
@@ -193,7 +191,7 @@ def B_spline_curve_fitting_visualize(images, keypoints):
         c_new[1][-1] += ending_point
 
         x_new, y_new = splev(u_new, (tck[0], c_new, tck[2]))
-
+            
         # Plot the B-spline curve
         plt.plot(x_new, y_new)
         st.pyplot()
@@ -211,39 +209,65 @@ def calculate_tooth_width(keypoints):
     tooth_lengths_pixels = tf.norm(denormalized_reshaped_keypoints[:, 0, :] - denormalized_reshaped_keypoints[:, 1, :], axis=1)
     return tooth_lengths_pixels.numpy()
 
+def check_concave_up_curve(keypoints):
+    keypoint = keypoints[0]
+    tck, u = splprep(keypoint.T, u=None, s=2000)
+    u_new = np.linspace(u.min(), u.max(), 1000)
+    x2_new, y2_new = splev(u_new, tck, der=2)
+
+    # if second derivative is always negative, means the curve is concave down
+    # but since the y-axis increases downwards (computer graphics coordinate system), it will give opposite result, so i flip the sign
+    if np.all(y2_new > 0):
+        #  curve is concave down or n shape
+        return False
+    else:
+        #  curve is concave up or u shape
+        return True
+
 st.sidebar.header("Note :warning:")
 st.sidebar.write("1. Current model only able to detect 14 pairs of mesial and distal points, please upload image with 14 teeth only.")
-st.sidebar.write("2. Whether it is the upper or lower arch image, please ensure the dental arch is facing upwards in an \"n\" shape.")
-st.sidebar.write("3. For best result, please ensure the whole dental is centered at the middle.")
+st.sidebar.write("2. For best result, please ensure the whole dental is centered at the middle.")
 st.sidebar.image('sample.JPG', caption="Example image")
-
-# model = tf.keras.models.load_model('intraoral_modelv2.h5')
 
 # download model because deployment doesn't support file > 100MB
 import gdown
 # Define a function to download the model from the gdrive link
 @st.cache_resource
-def download_model():
-  # Specify the gdrive link and the file name
-  gdrive_link = 'https://drive.google.com/uc?id=1c1P3vLze0NpqyCTc7eWBPyIR9cqMG4K_'
-  file_name = "intraoral_modelv2.h5"
-  # Use gdown to download the file from the gdrive link
-  gdown.download(gdrive_link, file_name, quiet=False)
-  # Return the file name
-  return file_name
+def download_models():
+    model_link = 'https://drive.google.com/uc?id=1c1P3vLze0NpqyCTc7eWBPyIR9cqMG4K_'
+    filtering_model_link = 'https://drive.google.com/uc?id=1yDJCfMTMsqgfbGQxxymQkQlnAOe7ytyg'
+
+    model_file_name = "intraoral_modelv2.h5"
+    filtering_model_file_name = "filtering_modelv1.h5"
+
+    # Use gdown to download the file from the gdrive link
+    gdown.download(model_link, model_file_name, quiet=False)
+    gdown.download(filtering_model_link, model_file_name, quiet=False)
+    # Return the file name
+    return model_file_name, filtering_model_file_name
 
 # Define a function to load the model using keras
 @st.cache_resource
 def load_model(file_name):
   # Load the model from the local file
-  model = tf.keras.models.load_model(file_name)
+  model = tf.keras.models.load_model(file_name, compile = False)
+  model.compile(loss='mean_squared_error', optimizer='adam')
   # Return the model
   return model
 
+# @st.cache_resource
+# def load_filtering_model(file_name):
+#   # Load the model from the local file
+#   filtering_model = tf.keras.models.load_model(file_name, compile = False)
+#   filtering_model.compile(loss='mean_squared_error', optimizer='adam')
+#   # Return the model
+#   return filtering_model
+
 # Call the download_model function and get the file name
-file_name = download_model()
+model_file_name, filtering_model_file_name = download_models()
 # Call the load_model function and get the model
-model = load_model(file_name)
+model = load_model(model_file_name)
+filtering_model = load_model(filtering_model_file_name)
 
 image = st.file_uploader("Upload an intraoral photograph", type = ['png', 'jpg'])
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -251,10 +275,37 @@ if image is not None:
     image =  load_and_process(image)
     if len(image.shape) == 3:
         image = np.expand_dims(image, axis=0)
+
         # Check if the image has changed
-        if 'last_image' not in st.session_state or not np.array_equal(image, st.session_state.last_image):
+        if 'last_image' not in st.session_state or (not (np.array_equal(image, st.session_state.last_image)) and not (np.array_equal(np.flip(image, axis=1), st.session_state.last_image))):
             for key in st.session_state.keys():
                 del st.session_state[key]
+
+            # validate image using filtering model
+            filtering_predictions = filtering_model.predict(image)
+            filtering_predictions = tf.reshape(filtering_predictions, (image.shape[0], -1, 2))
+            # denormalize predictions
+            denorm_filtering_keypoints = denormalize_keypoints(filtering_predictions, target_width, target_height)
+            # validate if intraoral if detected from the input image
+            # if first point is close to last point or points are close to each other, most likely the input image is not intraoral
+
+            p1 = denorm_filtering_keypoints[0][0]
+            p2 = denorm_filtering_keypoints[0][-1]
+            distance_p1p2 = np.linalg.norm(p2 - p1)
+
+            # if sum_tooth_widths is small means points close to each other
+            tooth_lengths_pixels = calculate_tooth_width(filtering_predictions)
+            sum_tooth_widths = sum(tooth_lengths_pixels)
+
+            if ((distance_p1p2 < 50) or (sum_tooth_widths < 120)):
+                st.error('Intraoral is not detected, please upload another image', icon="🚨")
+                st.stop()
+            
+            if check_concave_up_curve(denorm_filtering_keypoints):
+                # flip image vertically if concave up curve detected
+                image = np.flip(image, axis=1)
+                st.info("Image is vertically flipped")
+
             # prediction
             predictions = model.predict(image)
             predictions = tf.reshape(predictions, (image.shape[0], -1, 2))
@@ -265,8 +316,8 @@ if image is not None:
         else:
             # Use the stored result
             predictions = st.session_state.predictions
+            image = st.session_state.last_image
 
-        # denormalize predictions
         if 'denormalized_predictions' not in st.session_state:
             st.session_state.denormalized_predictions = denormalize_keypoints(predictions, target_width, target_height)
 
@@ -306,3 +357,4 @@ if image is not None:
 
                 st.write("Arch form length: {:.2f} mm".format(curve_length_actual))
                 st.write("Crowding: {:.2f} mm".format(sum_tooth_widths-curve_length_actual))
+
