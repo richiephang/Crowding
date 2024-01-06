@@ -336,7 +336,7 @@ if image is not None:
         x_list, y_list = B_spline_curve_fitting_visualize(image, st.session_state.denormalized_predictions)
 
         with st.form(key='my_form'):
-            actual_length = st.number_input("Input central incisor tooth width (mm)", min_value = 0, value = None, placeholder = "Type a number...")
+            actual_length = st.number_input("Input central incisor tooth width (mm)", min_value = 0.0, value = None, placeholder = "Type a number...")
             submit_button = st.form_submit_button(label='Check result')
             if submit_button:
                 
