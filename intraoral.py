@@ -158,7 +158,7 @@ def B_spline_curve_fitting_visualize(images, keypoints):
         with st.expander("Adjust curve"):
             smoothness = st.slider("Smoothness of curve", 300, 3000, value = 1000)
             coeff = st.slider("Curve size", -20.0, 20.0, value = -5.0)
-            middle = st.slider("Middle point", -20.0, 20.0, value = 0.0)
+            middle = st.slider("Midline point", -20.0, 20.0, value = 0.0)
             starting_point = st.slider("Starting point", -20.0, 20.0, value = 0.0)
             ending_point = st.slider("Ending point", -20.0, 20.0, value = 0.0)
 
@@ -327,10 +327,12 @@ if image is not None:
             adjusted_point = streamlit_image_coordinates(
                 image_adjust.astype(np.uint8),
                 key=f"numpy_{option}",
+                height = 672,
+                width = 672, # size of image is tripled
             )
             if adjusted_point is not None:
-                st.session_state.denormalized_predictions[0, option-1, 0] = adjusted_point['x']
-                st.session_state.denormalized_predictions[0, option-1, 1] = adjusted_point['y']
+                st.session_state.denormalized_predictions[0, option-1, 0] = adjusted_point['x']/3 #divide by 3 to obtain original point
+                st.session_state.denormalized_predictions[0, option-1, 1] = adjusted_point['y']/3
 
         # display result
         x_list, y_list = B_spline_curve_fitting_visualize(image, st.session_state.denormalized_predictions)
