@@ -234,7 +234,7 @@ import gdown
 # Define a function to download the model from the gdrive link
 @st.cache_resource
 def download_models():
-    model_link = 'https://drive.google.com/uc?id=1c1P3vLze0NpqyCTc7eWBPyIR9cqMG4K_'
+    model_link = 'https://drive.google.com/uc?id=1yDJCfMTMsqgfbGQxxymQkQlnAOe7ytyg'
     filtering_model_link = 'https://drive.google.com/uc?id=1yDJCfMTMsqgfbGQxxymQkQlnAOe7ytyg'
 
     model_file_name = "intraoral_modelv2.h5"
