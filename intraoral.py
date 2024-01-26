@@ -58,7 +58,7 @@ def load_and_process(image_file):
 
     return tf.convert_to_tensor(normalized_image)
 
-def visualize_keypoints(images, keypoints, target_width, target_height):
+def visualize_keypoints(images, keypoints):
     # Define a list of 32 colors for each keypoint
     colors = list(matplotlib.colors.CSS4_COLORS.keys())[:32]
 
@@ -71,13 +71,9 @@ def visualize_keypoints(images, keypoints, target_width, target_height):
         # Convert the tensors to numpy arrays
         if tf.is_tensor(image):
           image = image.numpy()
-        keypoint = keypoint.numpy()
 
         # Denormalize the image pixels to range [0, 255]
         image = image * 255.0
-
-        # Denormalize the keypoints coordinates to range [0, target_width] and [0, target_height]
-        keypoint = keypoint * np.array([target_width, target_height])
 
         # Plot the image and the keypoints
         plt.figure(figsize=(10, 10))
@@ -225,7 +221,7 @@ def check_concave_up_curve(keypoints):
         return True
 
 st.sidebar.header("Note :warning:")
-st.sidebar.write("1. Current model only able to detect 14 pairs of mesial and distal points, please upload image with 14 teeth only.")
+st.sidebar.write("1. Please upload image with 14 teeth only, as the current model only supports complete dentition excluding wisdom teeth.")
 st.sidebar.write("2. For best result, please ensure the whole dental is centered at the middle.")
 st.sidebar.image('sample.JPG', caption="Example image")
 
