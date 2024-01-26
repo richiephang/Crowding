@@ -35,7 +35,13 @@ This project aims to propose a method that can automate the process of assessing
    * However, the tooth widths calculated are in pixel unit. To convert the tooth widths to millimeters, scaling factor is calculated, which is the ratio of the pixel width to the millimeter width of the central incisor tooth. Millimeter width of the central incisor tooth should be measured and input by the user.
    * The severity of crowding is assessed by calculating the difference between sum of all tooth widths and arch form length. The higher the value, the more severe the crowding.
 
+<br><br>
+The system is deployed on [Streamlit](https://richiephang-crowding.streamlit.app/).
 
+Features of the system:
+1. Tooth points adjustment.
+2. Arch form adjustment.
+3. Validates the input images to ensure they are intraoral photographs, and it supports both concave up and concave down dental arch images.
 
 
      
