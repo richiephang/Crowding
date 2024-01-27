@@ -38,7 +38,7 @@ This project aims to propose a method that can automate the process of assessing
 <br><br>
 The system is deployed on [Streamlit](https://richiephang-crowding.streamlit.app/).
 
-Features of the system:
+Extra features of the system:
 * Tooth points adjustment
 * Arch form adjustment
 * Validates the input images to ensure they are intraoral photographs, and it supports both concave up and concave down dental arch images
