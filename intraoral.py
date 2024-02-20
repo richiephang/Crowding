@@ -239,8 +239,8 @@ def download_models():
     filtering_model_file_name = "filtering_modelv1.h5"
 
     # Use gdown to download the file from the gdrive link
-    gdown.download(model_link, model_file_name, quiet=False, use_cookies=True)
-    gdown.download(filtering_model_link, filtering_model_file_name, quiet=False, use_cookies=True)
+    gdown.download(model_link, model_file_name, quiet=False)
+    gdown.download(filtering_model_link, filtering_model_file_name, quiet=False)
     # Return the file name
     return model_file_name, filtering_model_file_name
 
