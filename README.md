@@ -16,6 +16,7 @@ This project aims to propose a method that can automate the process of assessing
 
 #### Proposed method:
 1. Tooth Landmarks Detection
+   * Model Training: https://colab.research.google.com/drive/1sdfMmZLLEh0oXh3V1KVLhr6P0xNt89b9?usp=sharing
    * Pretrained VGG-19 is used to apply transfer learning to train a tooth landmarks detection model.
    * The model can predict mesial and distal points for each tooth on intraoral photographs.
      
