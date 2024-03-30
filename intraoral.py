@@ -225,7 +225,7 @@ st.sidebar.write("1. Please upload image with 14 teeth only, as the current mode
 st.sidebar.write("2. For best result, please ensure the whole dental is centered at the middle.")
 st.sidebar.image('sample.JPG', caption="Example image")
 
-# download model because deployment doesn't support file > 100MB
+# Models are stored in google drive as streamlit deployment doesn't support file > 100MB
 import gdown
 # Define a function to download the model from the gdrive link
 @st.cache_resource
