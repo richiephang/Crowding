@@ -231,9 +231,7 @@ import gdown
 @st.cache_resource
 def download_models():
     model_link = 'https://drive.google.com/uc?id=149JqmcSDXL2EANEXn_HWJiak6DTCTsdX'
-    # model_link = 'https://drive.google.com/uc?id=1E9UXw9c0ExBkX52NEjnVpY6MPRLj78yB'
     filtering_model_link = 'https://drive.google.com/uc?id=1QGiGq3LvuoxF7k9T6ezkC4KEasVruDtt'
-    # filtering_model_link = 'https://drive.google.com/uc?id=1yDJCfMTMsqgfbGQxxymQkQlnAOe7ytyg'
 
     model_file_name = "intraoral_modelv2.h5"
     filtering_model_file_name = "filtering_modelv1.h5"
